@@ -8,6 +8,8 @@ RSS_PATH = "http://www.comedycentral.com/comedycentral/video/data/mrss.jhtml?uri
 ICON = "icon-default.png"
 ART = "art-default.jpg"
 
+SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report"]
+#showurl.count("katz") == 0 and showurl.count("scrubs") == 0 and showurl.count("wanda") == 0 and showurl.count("mad_tv") == 0 and showurl.count("colbert") == 0
 ####################################################################################################
 def Start():
   Plugin.AddPrefixHandler(COMCENT_PLUGIN_PREFIX, MainMenu, "Comedy Central", ICON, ART)
@@ -20,10 +22,14 @@ def Start():
 
 def MainMenu():
   dir = MediaContainer(viewGroup="List", title1="Comedy Central")
-  for show in HTML.ElementFromURL("http://www.comedycentral.com/shows/index.jhtml").xpath('//div[@class="hiddencontent"]/ul/li/a'):
-    showurl = show.get("href")
-    if showurl.count("http://") == 0 and showurl.count("katz") == 0 and showurl.count("scrubs") == 0 and showurl.count("wanda") == 0 and showurl.count("mad_tv") == 0 and showurl.count("colbert") == 0:
-      dir.Append(Function(DirectoryItem(Level1, title = show.text_content()),url=showurl,title = show.text_content().encode('utf-8')))
+  for show in HTML.ElementFromURL("http://www.comedycentral.com/shows").xpath('//ul[@class="shows_list"]/li'):
+    showurl = show.xpath('.//meta[@itemprop="url"]')[0].get('content')
+    name = show.xpath('.//meta[@itemprop="name"]')[0].get('content')
+    summary = show.xpath('.//meta[@itemprop="description"]')[0].get('content')
+    thumb = show.xpath('.//img')[0].get('src').split('?')[0]
+    if name in SHOW_EXCLUSIONS:
+      continue
+    dir.Append(Function(DirectoryItem(Level1, title=name, summary=summary, thumb=thumb), url=showurl,title=name))
         
   return dir
   
