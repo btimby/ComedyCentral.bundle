@@ -1,55 +1,67 @@
-COMCENT_PLUGIN_PREFIX       = "/video/comedycentral"
-YAHOO_NAMESPACE  = {'media':'http://search.yahoo.com/mrss/'}
-
 BASE_URL = "http://www.comedycentral.com"
-RSS_PATH = "http://www.comedycentral.com/feeds/mrss?uri=%s"
+MRSS_PATH = "http://www.comedycentral.com/feeds/mrss?uri=%s"
+MRSS_NS = {"media": "http://search.yahoo.com/mrss/"}
 
 ICON = "icon-default.png"
 ART = "art-default.jpg"
 
 SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report"]
-#showurl.count("katz") == 0 and showurl.count("scrubs") == 0 and showurl.count("wanda") == 0 and showurl.count("mad_tv") == 0 and showurl.count("colbert") == 0
+
 ####################################################################################################
 def Start():
-    Plugin.AddPrefixHandler(COMCENT_PLUGIN_PREFIX, MainMenu, "Comedy Central", ICON, ART)
-    ObjectContainer.art = R(ART)
-    DirectoryObject.thumb = R(ICON)
-    ObjectContainer.title1 = "Comedy Central"
+
+	Plugin.AddPrefixHandler("/video/comedycentral", MainMenu, "Comedy Central", ICON, ART)
+	ObjectContainer.art = R(ART)
+	DirectoryObject.thumb = R(ICON)
+	ObjectContainer.title1 = "Comedy Central"
+
+	HTTP.CacheTime = CACHE_1HOUR
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20100101 Firefox/13.0.1'
+
 ####################################################################################################
-
 def MainMenu():
-    oc = ObjectContainer()
-    for show in HTML.ElementFromURL("http://www.comedycentral.com/shows").xpath('//ul[@class="shows_list"]/li'):
-	showurl = show.xpath('.//meta[@itemprop="url"]')[0].get('content').encode("utf-8")
-	name = show.xpath('.//meta[@itemprop="name"]')[0].get('content').encode("utf-8")
-	summary = show.xpath('.//meta[@itemprop="description"]')[0].get('content')
-	thumb = show.xpath('.//img')[0].get('src').split('?')[0]
-	if name in SHOW_EXCLUSIONS:
-	    continue
-	oc.add(DirectoryObject(key=Callback(Level1, showurl=showurl,title=name), title=name, summary=summary,
-	    thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
-    return oc
-  
-def Level1(showurl, title):
-    oc = ObjectContainer(title2=title)
-    if not showurl.startswith('http://'):
-	showurl = ("http://www.comedycentral.com" + url)
 
-    showpage = HTML.ElementFromURL(showurl)
-    id = showpage.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
-    
-    rssfeed = RSS.FeedFromURL(RSS_PATH % id)
-    for entry in rssfeed.entries:
-	title = entry.title
-        summary = entry.description
-	date = Datetime.ParseDate(entry.updated).date()
-	url = entry.links[0]['href']
-	thumb = entry.media_thumbnail[0]['url']
-	runtime = int(entry.media_content[0]['duration'])*1000
-	oc.add(VideoClipObject(url=url, title=title, summary=summary, originally_available_at=date, duration=runtime,
-	    thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
-	
-    if len(oc) == 0:
-	return ObjectContainer(header="Error", message="This category does not contain any video.")
-    else:
+	oc = ObjectContainer()
+
+	for show in HTML.ElementFromURL("http://www.comedycentral.com/shows").xpath('//ul[@class="shows_list"]/li'):
+		name = show.xpath('.//meta[@itemprop="name"]')[0].get('content').encode("utf-8")
+
+		if name in SHOW_EXCLUSIONS:
+			continue
+
+		show_url = show.xpath('.//meta[@itemprop="url"]')[0].get('content').encode("utf-8")
+		summary = String.StripTags(show.xpath('.//meta[@itemprop="description"]')[0].get('content').replace('Â®', '®'))
+		thumb = show.xpath('.//img')[0].get('src').split('?')[0]
+
+		oc.add(DirectoryObject(key=Callback(Episodes, show_url=show_url, title=name), title=name, summary=summary,
+			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+
 	return oc
+
+####################################################################################################
+def Episodes(show_url, title):
+
+	oc = ObjectContainer(title2=title)
+
+	if not show_url.startswith('http://'):
+		show_url = ("http://www.comedycentral.com" + url)
+
+	show_page = HTML.ElementFromURL(show_url)
+	id = show_page.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
+	mrss_feed = XML.ElementFromURL(MRSS_PATH % id)
+
+	for item in mrss_feed.xpath('//item'):
+		url = item.xpath('./link')[0].text
+		title = item.xpath('./title')[0].text
+		summary = item.xpath('./description')[0].text
+		date = Datetime.ParseDate(item.xpath('./pubDate')[0].text).date()
+		thumb = item.xpath('.//media:thumbnail', namespaces=MRSS_NS)[0].get('url')
+		duration = int(item.xpath('.//media:content', namespaces=MRSS_NS)[0].get('duration')) * 1000
+
+		oc.add(VideoClipObject(url=url, title=title, summary=summary, originally_available_at=date, duration=duration,
+			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+
+	if len(oc) == 0:
+		return ObjectContainer(header="Error", message="This category does not contain any video.")
+	else:
+		return oc
