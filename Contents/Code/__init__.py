@@ -5,7 +5,7 @@ MRSS_NS = {"media": "http://search.yahoo.com/mrss/"}
 ICON = "icon-default.png"
 ART = "art-default.jpg"
 
-SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report"]
+SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report", "South Park"]
 
 ####################################################################################################
 def Start():
