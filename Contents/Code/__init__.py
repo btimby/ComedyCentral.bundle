@@ -47,7 +47,12 @@ def Episodes(show_url, title):
 		show_url = ("http://www.comedycentral.com" + url)
 
 	show_page = HTML.ElementFromURL(show_url)
-	id = show_page.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
+	try:
+		id = show_page.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
+	except:
+		episodes_url = show_page.xpath('//a[@class="episodes"]')[0].get('href')
+		show_page = HTML.ElementFromURL(episodes_url)
+		id = show_page.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
 	mrss_feed = XML.ElementFromURL(MRSS_PATH % id)
 
 	for item in mrss_feed.xpath('//item'):
@@ -56,7 +61,7 @@ def Episodes(show_url, title):
 		summary = item.xpath('./description')[0].text
 		date = Datetime.ParseDate(item.xpath('./pubDate')[0].text).date()
 		thumb = item.xpath('.//media:thumbnail', namespaces=MRSS_NS)[0].get('url')
-		duration = int(item.xpath('.//media:content', namespaces=MRSS_NS)[0].get('duration')) * 1000
+		duration = int(float(item.xpath('.//media:content', namespaces=MRSS_NS)[0].get('duration'))*1000)
 
 		oc.add(VideoClipObject(url=url, title=title, summary=summary, originally_available_at=date, duration=duration,
 			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
