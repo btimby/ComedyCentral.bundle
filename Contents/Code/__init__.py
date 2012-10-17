@@ -17,7 +17,7 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20100101 Firefox/13.0.1'
 
 ####################################################################################################
-@handler("/video/comedycentral", "Comedy Central", ICON, ART)
+@handler("/video/comedycentral", "Comedy Central", thumb=ICON, art=ART)
 def MainMenu():
 
 	oc = ObjectContainer()
