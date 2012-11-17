@@ -45,7 +45,7 @@ def Episodes(show_url, title):
 	oc = ObjectContainer(title2=title)
 
 	if not show_url.startswith('http://'):
-		show_url = ("http://www.comedycentral.com" + url)
+		show_url = ("http://www.comedycentral.com" + show_url)
 
 	show_page = HTML.ElementFromURL(show_url)
 	try:
