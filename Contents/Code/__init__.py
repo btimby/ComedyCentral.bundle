@@ -44,11 +44,10 @@ def Episodes(show_url, title):
 	oc = ObjectContainer(title2=title)
 
 	if not show_url.startswith('http://'):
-		show_url = ("http://www.comedycentral.com" + url)
+		show_url = ("http://www.comedycentral.com" + show_url)
 
 	show_page = HTML.ElementFromURL(show_url)
 	try:
-		#id = show_page.xpath('//div[@id="video_player_box"]')[0].get('data-mgid')
 		episodes = show_page.xpath('//div[@itemtype="http://schema.org/TVEpisode"]')[1:]
 		if len(episodes) == 0:
 			raise error
@@ -78,15 +77,6 @@ def Episodes(show_url, title):
 		summary = episode.xpath('.//meta[@itemprop="description"]')[0].get('content')
 		date = episode.xpath('.//meta[@itemprop="datePublished"]')[0].get('content')
 		date = Datetime.ParseDate(date).date()
-	#mrss_feed = XML.ElementFromURL(MRSS_PATH % id)
-
-	#for item in mrss_feed.xpath('//item'):
-	#	url = item.xpath('./link')[0].text
-	#	title = item.xpath('./title')[0].text
-	#	summary = item.xpath('./description')[0].text
-	#	date = Datetime.ParseDate(item.xpath('./pubDate')[0].text).date()
-	#	thumb = item.xpath('.//media:thumbnail', namespaces=MRSS_NS)[0].get('url')
-	#	duration = int(float(item.xpath('.//media:content', namespaces=MRSS_NS)[0].get('duration'))*1000)
 
 		oc.add(VideoClipObject(url=url, title=title, summary=summary, originally_available_at=date,
 			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
