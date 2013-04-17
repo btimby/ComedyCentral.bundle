@@ -1,24 +1,17 @@
 BASE_URL = "http://www.comedycentral.com"
 MRSS_PATH = "http://www.comedycentral.com/feeds/mrss?uri=%s"
 MRSS_NS = {"media": "http://search.yahoo.com/mrss/"}
-
-ICON = "icon-default.png"
-ART = "art-default.jpg"
-
 SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report", "South Park"]
 
 ####################################################################################################
 def Start():
 
-	ObjectContainer.art = R(ART)
-	DirectoryObject.thumb = R(ICON)
 	ObjectContainer.title1 = "Comedy Central"
-
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20100101 Firefox/13.0.1'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0'
 
 ####################################################################################################
-@handler("/video/comedycentral", "Comedy Central", thumb=ICON, art=ART)
+@handler("/video/comedycentral", "Comedy Central")
 def MainMenu():
 
 	oc = ObjectContainer()
@@ -33,8 +26,12 @@ def MainMenu():
 		summary = String.StripTags(show.xpath('.//meta[@itemprop="description"]')[0].get('content').replace('Â®', '®'))
 		thumb = show.xpath('.//img')[0].get('src').split('?')[0]
 
-		oc.add(DirectoryObject(key=Callback(Episodes, show_url=show_url, title=name), title=name, summary=summary,
-			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+		oc.add(DirectoryObject(
+			key = Callback(Episodes, show_url=show_url, title=name),
+			title = name,
+			summary = summary,
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+		))
 
 	return oc
 
@@ -51,7 +48,7 @@ def Episodes(show_url, title):
 	try:
 		episodes = show_page.xpath('//div[@itemtype="http://schema.org/TVEpisode"]')[1:]
 
-		if len(episodes) == 0:
+		if len(episodes) < 1:
 			return ObjectContainer(header="Error", message="This category does not contain any video.")
 	except:
 		try:
@@ -62,7 +59,7 @@ def Episodes(show_url, title):
 		show_page = HTML.ElementFromURL(episodes_url)
 		episodes = show_page.xpath('//div[@itemtype="http://schema.org/TVEpisode"]')[1:]
 
-		if len(episodes) == 0:
+		if len(episodes) < 1:
 			''' one last try to grab at least one episode '''
 			try:
 				HTTP.Request(show_url + 'full-episodes/', follow_redirects=False).headers
@@ -70,7 +67,8 @@ def Episodes(show_url, title):
 				try:
 					episode_page = e.location
 					oc.add(URLService.MetadataObjectForURL(episode_page))
-				except: pass
+				except:
+					pass
 
 	for episode in episodes:
 		url = episode.xpath('.//meta[@itemprop="url"]')[0].get('content')
@@ -80,10 +78,15 @@ def Episodes(show_url, title):
 		date = episode.xpath('.//meta[@itemprop="datePublished"]')[0].get('content')
 		date = Datetime.ParseDate(date).date()
 
-		oc.add(VideoClipObject(url=url, title=title, summary=summary, originally_available_at=date,
-			thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+		oc.add(VideoClipObject(
+			url = url,
+			title = title,
+			summary = summary,
+			originally_available_at = date,
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+		))
 
-	if len(oc) == 0:
+	if len(oc) < 1:
 		return ObjectContainer(header="Error", message="This category does not contain any video.")
 	else:
 		return oc
