@@ -1,7 +1,8 @@
 BASE_URL = "http://www.comedycentral.com"
 MRSS_PATH = "http://www.comedycentral.com/feeds/mrss?uri=%s"
 MRSS_NS = {"media": "http://search.yahoo.com/mrss/"}
-SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report", "South Park"]
+RE_DURATION = Regex('([0-9]+)')
+SHOW_EXCLUSIONS = ["The Daily Show with Jon Stewart", "The Colbert Report", "South Park"]
 
 ####################################################################################################
 def Start():
@@ -45,19 +46,19 @@ def Episodes(show_url, title):
 		show_url = ("http://www.comedycentral.com" + show_url)
 
 	show_page = HTML.ElementFromURL(show_url)
-	try:
-		episodes = show_page.xpath('//div[@itemtype="http://schema.org/TVEpisode"]')[1:]
-
-		if len(episodes) < 1:
-			return ObjectContainer(header="Error", message="This category does not contain any video.")
-	except:
+	episodes = show_page.xpath('//div[@class="content"]//div[@itemtype="http://schema.org/TVEpisode"]')
+	if len(episodes) > 0:
+		Log("Found %s episodes" % len(episodes))
+		pass
+	else:
 		try:
 			episodes_url = show_page.xpath('//a[@class="episodes"]')[0].get('href')
 		except:
 			episodes_url = show_url + 'full-episodes/'
-
+		
+		Log("Checking new page for episodes: %s" % episodes_url)
 		show_page = HTML.ElementFromURL(episodes_url)
-		episodes = show_page.xpath('//div[@itemtype="http://schema.org/TVEpisode"]')[1:]
+		episodes = show_page.xpath('//div[@class="content"]//div[@itemtype="http://schema.org/TVEpisode"]')
 
 		if len(episodes) < 1:
 			''' one last try to grab at least one episode '''
@@ -76,8 +77,11 @@ def Episodes(show_url, title):
 		thumb = episode.xpath('.//meta[@itemprop="image"]')[0].get('content')
 		summary = episode.xpath('.//meta[@itemprop="description"]')[0].get('content')
 		date = episode.xpath('.//meta[@itemprop="datePublished"]')[0].get('content')
-		date = Datetime.ParseDate(date).date()
-
+		if date != "":
+			date = Datetime.ParseDate(date).date()
+		else:
+				date = None
+		
 		oc.add(VideoClipObject(
 			url = url,
 			title = title,
