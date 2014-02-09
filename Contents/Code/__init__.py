@@ -2,7 +2,7 @@ BASE_URL = "http://www.comedycentral.com"
 MRSS_PATH = "http://www.comedycentral.com/feeds/mrss?uri=%s"
 MRSS_NS = {"media": "http://search.yahoo.com/mrss/"}
 RE_DURATION = Regex('([0-9]+)')
-SHOW_EXCLUSIONS = ["The Daily Show with Jon Stewart", "The Colbert Report", "South Park"]
+SHOW_EXCLUSIONS = ["The Daily Show", "The Daily Show with Jon Stewart", "The Colbert Report", "South Park"]
 
 ####################################################################################################
 def Start():
