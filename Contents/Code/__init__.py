@@ -61,12 +61,17 @@ def Shows(title):
     return oc
 
 ####################################################################################################
-@route("/video/comedycentral/videofeed/{show_id}")
-def VideoFeed(title, show_id):
+@route("/video/comedycentral/videofeed")
+def VideoFeed(title, show_id='', show_url=''):
 
     oc = ObjectContainer(title2=title)
 
-    json = JSON.ObjectFromURL(EPISODE_FEED % (show_id))
+    if show_id != '':
+        url = EPISODE_FEED % (show_id)
+    else:
+        url = show_url
+
+    json = JSON.ObjectFromURL(url)
 
     for video in json['result']['episodes']:
 
