@@ -1,7 +1,7 @@
 BASE_URL = "http://www.cc.com"
 SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report", "South Park", "The Daily Show"]
 SHOW_FEED = 'http://www.cc.com/feeds/ent_m081_cc/1.0/4043f1d9-d18f-48a3-89e0-68acad5236f1'
-EPISODE_FEED = 'http://www.cc.com/feeds/f1010/1.0/5a123a71-d8b9-45d9-85d5-e85508b1b37c/%s/1'
+EPISODE_FEED = ['http://www.cc.com/feeds/f1010/1.0/5a123a71-d8b9-45d9-85d5-e85508b1b37c/%s/1', 'http://www.cc.com/feeds/ent_m010_cc/b/1.0/%s']
 STANDUP_FEED = 'http://www.cc.com/feeds/ent_m080_cc/1.0/ee4047bd-e5aa-474c-aa62-e7415535e276'
 SAMPLE_FEED = 'http://www.cc.com/feeds/ent_m080_cc/1.0/1159cd2a-34d8-42ed-8db6-c479c5c6ba65'
 
@@ -65,38 +65,52 @@ def Shows(title):
 def VideoFeed(title, show_id='', show_url=''):
 
     oc = ObjectContainer(title2=title)
+    feed_urls = []
+    episode_ids = []
 
     if show_id != '':
-        url = EPISODE_FEED % (show_id)
+        for feed in EPISODE_FEED:
+            feed_urls.append(feed % (show_id))
+
     else:
-        url = show_url
+        feed_urls.append(show_url)
 
-    json = JSON.ObjectFromURL(url)
+    for url in feed_urls:
 
-    for video in json['result']['episodes']:
+        json = JSON.ObjectFromURL(url)
 
-        vid_url = video['url']
-        vid_name = video['title']
-        vid_desc = video['description']
-        vid_date = int(video['airDate'])
-        vid_date = Datetime.FromTimestamp(vid_date)
-        vid_duration = Datetime.MillisecondsFromString(video['duration'])
-        episode = video['season']['episodeNumber']
-        season = video['season']['seasonNumber']
-        vid_img = video['images'][0]['url']
+        for video in json['result']['episodes']:
 
-        oc.add(EpisodeObject(
-            url = vid_url,
-            title = vid_name,
-            summary = vid_desc,
-            originally_available_at = vid_date,
-            duration = vid_duration,
-            season = int(season),
-            index = int(episode),
-            thumb = Resource.ContentsOfURLWithFallback(url=vid_img)
-        ))
+            vid_id = video['id']
+
+            if vid_id in episode_ids:
+                continue
+
+            episode_ids.append(vid_id)
+
+            vid_url = video['url']
+            vid_name = video['title']
+            vid_desc = video['description']
+            vid_date = int(video['airDate'])
+            vid_date = Datetime.FromTimestamp(vid_date)
+            vid_duration = Datetime.MillisecondsFromString(video['duration'])
+            episode = video['season']['episodeNumber']
+            season = video['season']['seasonNumber']
+            vid_img = video['images'][0]['url']
+
+            oc.add(EpisodeObject(
+                url = vid_url,
+                title = vid_name,
+                summary = vid_desc,
+                originally_available_at = vid_date,
+                duration = vid_duration,
+                season = int(season),
+                index = int(episode),
+                thumb = Resource.ContentsOfURLWithFallback(url=vid_img)
+            ))
 
     if len(oc) < 1:
         return ObjectContainer(header="Error", message="This category does not contain any video.")
     else:
+        oc.objects.sort(key=lambda obj: obj.originally_available_at, reverse=True)
         return oc
