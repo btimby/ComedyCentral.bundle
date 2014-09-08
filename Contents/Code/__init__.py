@@ -1,30 +1,30 @@
-BASE_URL = "http://www.cc.com"
-SHOW_EXCLUSIONS = ["The Daily Show With Jon Stewart", "The Colbert Report", "South Park", "The Daily Show"]
+BASE_URL = 'http://www.cc.com'
+SHOW_EXCLUSIONS = ['the daily show with jon stewart', 'the colbert report', 'south park', 'the daily show']
 SHOW_FEED = 'http://www.cc.com/feeds/ent_m081_cc/1.0/4043f1d9-d18f-48a3-89e0-68acad5236f1'
 EPISODE_FEED = ['http://www.cc.com/feeds/f1010/1.0/5a123a71-d8b9-45d9-85d5-e85508b1b37c/%s/1', 'http://www.cc.com/feeds/ent_m010_cc/b/1.0/%s']
-STANDUP_FEED = 'http://www.cc.com/feeds/ent_m080_cc/1.0/ee4047bd-e5aa-474c-aa62-e7415535e276'
-SAMPLE_FEED = 'http://www.cc.com/feeds/ent_m080_cc/1.0/1159cd2a-34d8-42ed-8db6-c479c5c6ba65'
+STANDUP_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/ee4047bd-e5aa-474c-aa62-e7415535e276']
+SAMPLE_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/1159cd2a-34d8-42ed-8db6-c479c5c6ba65', 'http://www.cc.com/feeds/ent_m079_cc/1.0/dc48e970-132f-49d9-95eb-4a5ae587da16']
 
 ####################################################################################################
 def Start():
 
-    ObjectContainer.title1 = "Comedy Central"
+    ObjectContainer.title1 = 'Comedy Central'
     HTTP.CacheTime = CACHE_1HOUR
     HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36'
 
 ####################################################################################################
-@handler("/video/comedycentral", "Comedy Central")
+@handler('/video/comedycentral', 'Comedy Central')
 def MainMenu():
 
     oc = ObjectContainer()
     oc.add(DirectoryObject(key = Callback(Shows, title="Shows"), title = "Shows"))
-    oc.add(DirectoryObject(key = Callback(VideoFeed, title="Standup Specials", show_url=STANDUP_FEED), title = "Standup Specials"))
-    oc.add(DirectoryObject(key = Callback(VideoFeed, title="Free Samples", show_url=SAMPLE_FEED), title = "Free Samples"))
+    oc.add(DirectoryObject(key = Callback(VideoFeed, title="Standup Specials"), title = "Standup Specials"))
+    oc.add(DirectoryObject(key = Callback(VideoFeed, title="Free Samples"), title = "Free Samples"))
     return oc
 
 ####################################################################################################
 # This builds a directory of shows from the Full Episode page "all Shows" pull down about half way down the page
-@route("/video/comedycentral/shows")
+@route('/video/comedycentral/shows')
 def Shows(title):
 
     oc = ObjectContainer(title2=title)
@@ -35,7 +35,7 @@ def Shows(title):
 
         show_title = shows['show']['title']
 
-        if show_title in SHOW_EXCLUSIONS:
+        if show_title.lower() in SHOW_EXCLUSIONS:
             continue
 
         show_id = shows['show']['id']
@@ -61,8 +61,8 @@ def Shows(title):
     return oc
 
 ####################################################################################################
-@route("/video/comedycentral/videofeed")
-def VideoFeed(title, show_id='', show_url=''):
+@route('/video/comedycentral/videofeed')
+def VideoFeed(title, show_id=''):
 
     oc = ObjectContainer(title2=title)
     feed_urls = []
@@ -72,14 +72,22 @@ def VideoFeed(title, show_id='', show_url=''):
         for feed in EPISODE_FEED:
             feed_urls.append(feed % (show_id))
 
-    else:
-        feed_urls.append(show_url)
+    elif title == 'Standup Specials':
+        feed_urls.extend(STANDUP_FEED)
+
+    elif title == 'Free Samples':
+        feed_urls.extend(SAMPLE_FEED)
 
     for url in feed_urls:
 
         json = JSON.ObjectFromURL(url)
 
         for video in json['result']['episodes']:
+
+            show_title = video['show']['title']
+
+            if show_title.lower() in SHOW_EXCLUSIONS:
+                continue
 
             vid_id = video['id']
 
