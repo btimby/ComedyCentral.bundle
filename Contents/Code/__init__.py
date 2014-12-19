@@ -1,6 +1,6 @@
 BASE_URL = 'http://www.cc.com'
 SHOW_EXCLUSIONS = ['the daily show with jon stewart', 'the colbert report', 'south park', 'the daily show']
-SHOW_FEED = 'http://www.cc.com/feeds/ent_m081_cc/1.0/4043f1d9-d18f-48a3-89e0-68acad5236f1'
+SHOW_FEED = 'http://www.cc.com/feeds/ent_m069_cc/1.0/234a4931-5c60-4783-9715-c0be928b6cc2'
 EPISODE_FEED = ['http://www.cc.com/feeds/f1010/1.0/5a123a71-d8b9-45d9-85d5-e85508b1b37c/%s/1', 'http://www.cc.com/feeds/ent_m010_cc/b/1.0/%s']
 STANDUP_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/ee4047bd-e5aa-474c-aa62-e7415535e276']
 SAMPLE_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/1159cd2a-34d8-42ed-8db6-c479c5c6ba65', 'http://www.cc.com/feeds/ent_m079_cc/1.0/dc48e970-132f-49d9-95eb-4a5ae587da16']
@@ -31,24 +31,24 @@ def Shows(title):
 
     json = JSON.ObjectFromURL(SHOW_FEED, cacheTime = CACHE_1DAY)
 
-    for shows in json['result']['shows']:
+    for show in json['result']['shows']:
 
-        show_title = shows['show']['title']
+        show_title = show['title']
 
         if show_title.lower() in SHOW_EXCLUSIONS:
             continue
 
-        show_id = shows['show']['id']
-        show_desc = shows['show']['shortDescription'].replace('ABOUT THE SERIES: ', '')
+        show_id = show['id']
+        show_desc = show['shortDescription'].replace('ABOUT THE SERIES: ', '')
 
         # There are 3 to 6 images available. This allows us to look for a larger image or at least one that is a proper icon size
         show_img_hgt = 0
-        show_img_total = len(shows['show']['images'])
+        show_img_total = len(show['images'])
         x = 0
 
         while show_img_hgt < 400 and x < show_img_total:
-            show_img_hgt = shows['show']['images'][x]['height']
-            show_img = shows['show']['images'][x]['url']
+            show_img_hgt = show['images'][x]['height']
+            show_img = show['images'][x]['url']
             x = x+1
 
         oc.add(DirectoryObject(
