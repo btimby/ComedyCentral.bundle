@@ -1,7 +1,7 @@
 BASE_URL = 'http://www.cc.com'
 SHOW_EXCLUSIONS = ['the daily show with jon stewart', 'the colbert report', 'south park', 'the daily show']
 SHOW_FEED = 'http://www.cc.com/feeds/ent_m069_cc/1.0/5ab40787-7d35-4449-84eb-efadc941cd34'
-EPISODE_FEED = ['http://www.cc.com/feeds/ent_m013_cc/1.0/5a6918c9-45c0-499c-81e0-eeeb08a07866/%s/1', 'http://www.cc.com/feeds/ent_m010_cc/b/1.0/%s']
+EPISODE_FEED = ['http://www.cc.com/feeds/ent_m010_cc/b/1.0/%s']
 STANDUP_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/ee4047bd-e5aa-474c-aa62-e7415535e276']
 SAMPLE_FEED = ['http://www.cc.com/feeds/ent_m080_cc/1.0/1159cd2a-34d8-42ed-8db6-c479c5c6ba65', 'http://www.cc.com/feeds/ent_m079_cc/1.0/dc48e970-132f-49d9-95eb-4a5ae587da16']
 
