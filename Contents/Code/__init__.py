@@ -83,6 +83,9 @@ def VideoFeed(title, show_id=''):
 
         json = JSON.ObjectFromURL(url)
 
+        if 'nextPageURL' in json['result']:
+            feed_urls.append(json['result']['nextPageURL'])
+
         for video in json['result']['episodes']:
 
             show_title = video['show']['title']
