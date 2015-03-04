@@ -108,7 +108,12 @@ def VideoFeed(title, show_id=''):
             vid_desc = video['description']
             vid_date = int(video['airDate'])
             vid_date = Datetime.FromTimestamp(vid_date)
-            vid_duration = Datetime.MillisecondsFromString(video['duration'])
+
+            try:
+                vid_duration = int(video['duration']) * 1000
+            except:
+                vid_duration = None
+
             episode = video['season']['episodeNumber']
             season = video['season']['seasonNumber']
             vid_img = video['images'][0]['url']
