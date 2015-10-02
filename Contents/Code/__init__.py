@@ -91,6 +91,9 @@ def VideoFeed(title, show_id=''):
 
         for video in json['result']['episodes']:
 
+            if not video['show']:
+                continue
+
             show_title = video['show']['title']
 
             if show_title.lower() in SHOW_EXCLUSIONS:
