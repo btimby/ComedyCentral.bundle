@@ -257,7 +257,7 @@ def ShowVideos(title, url, result_type):
     if next_page and len(oc) > 0:
 
         oc.add(NextPageObject(
-            key = Callback(ShowVideos, title=title, url=next_page),
+            key = Callback(ShowVideos, title=title, url=next_page, result_type=result_type),
             title = 'Next Page ...'
         ))
 
