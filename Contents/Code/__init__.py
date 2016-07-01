@@ -226,9 +226,13 @@ def ShowVideos(title, url, result_type):
             try: episode = int(video['season']['episodeNumber'])
             except: episode = 0
 
-            season = int(video['season']['seasonNumber'])
+            try: season = int(video['season']['seasonNumber'])
+            except: season = 0
             show = video['show']['title']
-            unix_date = video['airDate']
+            try: unix_date = video['airDate']
+            except:
+                try: unix_date = video['publishDate']
+                except: unix_date = unix_date = video['date']['originalPublishDate']['timestamp']
             date = Datetime.FromTimestamp(float(unix_date)).strftime('%m/%d/%Y')
             date = Datetime.ParseDate(date)
 
@@ -337,12 +341,15 @@ def Search(title, url, start=0, search_type=''):
             try: show = item['seriesTitle_t']
             except: show = ''
 
+            try: summary = item['description_t']
+            except: summary = ''
+
             oc.add(EpisodeObject(
                 url = item_url, 
                 show = show, 
                 title = full_title, 
                 thumb = Resource.ContentsOfURLWithFallback(url=item['imageUrl_s']),
-                summary = item['description_t'], 
+                summary = summary, 
                 season = season, 
                 index = episode, 
                 duration = Datetime.MillisecondsFromString(item['duration_s']), 
