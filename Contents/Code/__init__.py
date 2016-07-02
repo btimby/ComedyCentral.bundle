@@ -221,13 +221,11 @@ def ShowVideos(title, url, result_type):
                 summary = video['description']
             ))
         else:
-            show = video['show']['title']
-
             try: episode = int(video['season']['episodeNumber'])
-            except: episode = 0
+            except: episode = None
 
             try: season = int(video['season']['seasonNumber'])
-            except: season = 0
+            except: season = None
 
             try: unix_date = video['airDate']
             except:
@@ -245,7 +243,7 @@ def ShowVideos(title, url, result_type):
             # Everything else has episode and show info now
             oc.add(EpisodeObject(
                 url = vid_url, 
-                show = show,
+                show = video['show']['title'],
                 season = season,
                 index = episode,
                 title = video['title'], 
@@ -333,16 +331,16 @@ def Search(title, url, start=0, search_type=''):
         # For Episodes and ShowVideo(video clips)
         else:
             try: season = int(item['seasonNumber_s'].split(':')[0])
-            except: season = 0
+            except: season = None
 
             try: episode = int(item['episodeNumber_s'])
-            except: episode = 0
+            except: episode = None
 
             try: show = item['seriesTitle_t']
-            except: show = ''
+            except: show = None
 
             try: summary = item['description_t']
-            except: summary = ''
+            except: summary = None
 
             oc.add(EpisodeObject(
                 url = item_url, 
