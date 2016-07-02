@@ -232,7 +232,7 @@ def ShowVideos(title, url, result_type):
             try: unix_date = video['airDate']
             except:
                 try: unix_date = video['publishDate']
-                except: unix_date = unix_date = video['date']['originalPublishDate']['timestamp']
+                except: unix_date = video['date']['originalPublishDate']['timestamp']
             date = Datetime.FromTimestamp(float(unix_date)).strftime('%m/%d/%Y')
             date = Datetime.ParseDate(date)
 
