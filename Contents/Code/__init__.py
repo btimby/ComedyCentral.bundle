@@ -228,7 +228,7 @@ def ShowVideos(title, url, result_type):
 
             try: season = int(video['season']['seasonNumber'])
             except: season = 0
-            show = video['show']['title']
+
             try: unix_date = video['airDate']
             except:
                 try: unix_date = video['publishDate']
