@@ -10,7 +10,7 @@ FULL_SPECIALS = BASE_URL + '/shows/stand-up-library'
 RE_MANIFEST = Regex('var triforceManifestFeed = (.+?);', Regex.DOTALL)
 EXCLUSIONS = ['South Park']
 SEARCH ='http://search.cc.com/solr/cc/select?q=%s&wt=json&start='
-ENT_LIST = ['ent_m071', 'f1071', 'ent_m013', 'f1013', 'ent_m081', 'ent_m069', 'ent_m157', 'ent_m020', 'ent_m160', 'ent_m012']
+ENT_LIST = ['ent_m071', 'f1071', 'ent_m013', 'f1013', 'ent_m081', 'ent_m069', 'ent_m100', 'ent_m157', 'ent_m020', 'ent_m160', 'ent_m012']
 
 ####################################################################################################
 def Start():
@@ -89,7 +89,7 @@ def FeedMenu(title, url, thumb=''):
 
         # Create menu items for those that need to go to Produce Sections
         # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m069- show sections
-        if ent_code in ['ent_m071', 'f1071', 'ent_m157'] or (ent_code == 'ent_m069' and url == SHOWS_URL):
+        if ent_code in ['ent_m071', 'f1071', 'ent_m157'] or (ent_code in ('ent_m069', 'ent_m100') and url == SHOWS_URL):
 
             if title not in ['You May Also Like', 'Featured Comedians']:
 
@@ -379,6 +379,7 @@ def GetType(ent):
         {'ent':'f1013', 'type':'episodes'},
         {'ent':'ent_m081', 'type':'episodes'},
         {'ent':'ent_m069', 'type':'shows'},
+        {'ent':'ent_m100', 'type':'shows'},
         {'ent':'ent_m157', 'type':'promo'},
         {'ent':'ent_m020', 'type':'playlist'},
         {'ent':'ent_m160', 'type':'items'}
