@@ -10,7 +10,7 @@ FULL_SPECIALS = BASE_URL + '/shows/stand-up-library'
 RE_MANIFEST = Regex('var triforceManifestFeed = (.+?);', Regex.DOTALL)
 EXCLUSIONS = ['South Park']
 SEARCH ='http://search.cc.com/solr/cc/select?q=%s&wt=json&start='
-ENT_LIST = ['ent_m071', 'f1071', 'ent_m013', 'f1013', 'ent_m081', 'ent_m069', 'ent_m100', 'ent_m157', 'ent_m020', 'ent_m160', 'ent_m012']
+ENT_LIST = ['ent_m071', 'f1071', 'ent_m013', 'f1013', 'ent_m081', 'ent_m100', 'ent_m150', 'ent_m157', 'ent_m020', 'ent_m160', 'ent_m012']
 
 ####################################################################################################
 def Start():
@@ -88,8 +88,8 @@ def FeedMenu(title, url, thumb=''):
             except: title = json['result']['promo']['headerText']
 
         # Create menu items for those that need to go to Produce Sections
-        # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m069- show sections
-        if ent_code in ['ent_m071', 'f1071', 'ent_m157'] or (ent_code in ('ent_m069', 'ent_m100') and url == SHOWS_URL):
+        # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m100 and entm150 - show sections
+        if ent_code in ['ent_m071', 'f1071', 'ent_m157'] or (ent_code in [ 'ent_m100', 'ent_m150'] and url==SHOWS_URL):
 
             if title not in ['You May Also Like', 'Featured Comedians']:
 
@@ -137,13 +137,15 @@ def FeedMenu(title, url, thumb=''):
 ####################################################################################################
 # For Producing the sections from various json feeds
 @route(PREFIX + '/producesection')
-def ProduceSection(title, url, result_type, thumb=''):
+def ProduceSection(title, url, result_type, thumb='', alpha=''):
 
     oc = ObjectContainer(title2=title)
     (section_title, feed_url) = (title, url)
     json = JSON.ObjectFromURL(url)
 
     item_list = json['result'][result_type]
+    if '/feeds/ent_m150' in feed_url and alpha:
+        item_list = json['result'][result_type][alpha]
 
     if result_type == 'promo':
         item_list = json['result'][result_type]['items']
@@ -153,14 +155,27 @@ def ProduceSection(title, url, result_type, thumb=''):
         # Create a list of show sections
         if result_type == 'shows':
 
-            if item['title'] in EXCLUSIONS:
-                continue
-
-            oc.add(DirectoryObject(
-                key = Callback(FeedMenu, title=item['title'], url=item['canonicalURL'], thumb=item['images'][0]['url']),
-                title = item['title'],
-                thumb = Resource.ContentsOfURLWithFallback(url=item['images'][0]['url'])
-            ))
+            if '/feeds/ent_m150' in feed_url and not alpha:
+                Log('entered shows if')
+                oc.add(DirectoryObject(
+                    key=Callback(ProduceSection, title=item, url=feed_url, result_type=result_type, alpha=item),
+                    title=item.replace('hash', '#').title()
+                ))
+            else:
+                if item['title'] in EXCLUSIONS:
+                    continue
+                try: url = item['url']
+                except: url = item['canonicalURL']
+                # Skip bad show urls that do not include '/shows/' or events. If '/events/' there is no manifest.
+                if '/shows/' not in url:
+                    continue
+                try: thumb = item['images'][0]['url']
+                except: thumb = thumb
+                oc.add(DirectoryObject(
+                    key=Callback(FeedMenu, title=item['title'], url=url, thumb=thumb),
+                    title=item['title'],
+                    thumb = Resource.ContentsOfURLWithFallback(url=thumb)
+                ))
 
         # Create a list of comedian sections
         elif result_type == 'promo':
@@ -378,8 +393,8 @@ def GetType(ent):
         {'ent':'ent_m013', 'type':'episodes'},
         {'ent':'f1013', 'type':'episodes'},
         {'ent':'ent_m081', 'type':'episodes'},
-        {'ent':'ent_m069', 'type':'shows'},
         {'ent':'ent_m100', 'type':'shows'},
+        {'ent':'ent_m150', 'type':'shows'},
         {'ent':'ent_m157', 'type':'promo'},
         {'ent':'ent_m020', 'type':'playlist'},
         {'ent':'ent_m160', 'type':'items'}
