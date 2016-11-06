@@ -143,7 +143,11 @@ def ProduceSection(title, url, result_type, thumb='', alpha=''):
     (section_title, feed_url) = (title, url)
     json = JSON.ObjectFromURL(url)
 
-    item_list = json['result'][result_type]
+    if result_type in json['result']:
+        item_list = json['result'][result_type]
+    else:
+        return ObjectContainer(header="Empty", message="There are no results to list right now.")
+
     if '/feeds/ent_m150' in feed_url and alpha:
         item_list = json['result'][result_type][alpha]
 
