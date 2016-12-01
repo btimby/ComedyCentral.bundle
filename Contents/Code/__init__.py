@@ -84,10 +84,16 @@ def FeedMenu(title, url, thumb=''):
         json = JSON.ObjectFromURL(json_feed, cacheTime = CACHE_1DAY)
 
         # Get the title from the promo or playlist area
-        try: title = json['result']['playlist']['title']
+        try:
+            title = json['result']['playlist']['title']
         except:
-            try: title = json['result']['promo']['headline']
-            except: title = json['result']['promo']['headerText']
+            if 'promo' in json['result']:
+                try:
+                    title = json['result']['promo']['headline']
+                except:
+                    title = json['result']['promo']['headerText']
+            else:
+                continue
 
         # Create menu items for those that need to go to Produce Sections
         # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m100 and entm150 - show sections
