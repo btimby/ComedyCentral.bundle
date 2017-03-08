@@ -130,11 +130,13 @@ def FeedMenu(title, url, thumb=''):
 
             for item in json['result']['shows']:
 
+                try: thumb = item['show']['images'][0]['url']
+                except: thumb = ''
                 oc.add(DirectoryObject(
                     key = Callback(ShowVideos, title=item['show']['title'], url=item['fullEpisodesFeedURL'], result_type='episodes'),
                     title = item['show']['title'],
                     summary = item['show']['description'],
-                    thumb = Resource.ContentsOfURLWithFallback(url=item['show']['images'][0]['url'])
+                    thumb = Resource.ContentsOfURLWithFallback(url=thumb)
                 ))
 
     if len(oc) < 1:
@@ -234,7 +236,7 @@ def ShowVideos(title, url, result_type):
         vid_url = video['canonicalURL']
 
         # catch any bad links that get sent here
-        if not ('/video-clips/') in vid_url and not ('/episodes/') in vid_url:
+        if not ('/video-clips/') in vid_url and not ('/episodes/') in vid_url and not ('/full-episodes/') in vid_url:
             continue
 
         thumb = video['images'][0]['url']
