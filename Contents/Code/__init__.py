@@ -6,12 +6,13 @@ PREFIX = '/video/comedycentral'
 BASE_URL = 'http://www.cc.com'
 SHOWS_URL = BASE_URL + '/shows'
 TOSH_URL = 'http://tosh.cc.com'
-FULL_SPECIALS = BASE_URL + '/shows/stand-up-library'
+FULL_SPECIALS = BASE_URL + '/shows/stand-up-specials'
 
 # Pull the json from the HTML content to prevent any issues with redirects and/or bad urls
 RE_MANIFEST = Regex('var triforceManifestFeed = (.+?);', Regex.DOTALL)
 EXCLUSIONS = ['South Park']
-SEARCH ='http://search.cc.com/solr/cc/select?q=%s&wt=json&start='
+SEARCH ='http://search.cc.com/solr/cc/select?q=%s&wt=json&defType=edismax&start='
+SEARCH_TYPE = ['Video', 'Comedians', 'Episode', 'Series']
 ENT_LIST = ['ent_m071', 'f1071', 'ent_m013', 'f1013', 'ent_m081', 'ent_m100', 'ent_m150', 'ent_m157', 'ent_m020', 'ent_m160', 'ent_m012']
 
 ####################################################################################################
@@ -93,7 +94,11 @@ def FeedMenu(title, url, thumb=''):
                 except:
                     title = json['result']['promo']['headerText']
             else:
-                continue
+                try: 
+                    title = json['result']['data']['headerText']
+                except: 
+                    Log('no title found')
+                    continue
 
         # Create menu items for those that need to go to Produce Sections
         # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m100 and entm150 - show sections
@@ -146,51 +151,52 @@ def FeedMenu(title, url, thumb=''):
 
 ####################################################################################################
 # For Producing the sections from various json feeds
-@route(PREFIX + '/producesection')
-def ProduceSection(title, url, result_type, thumb='', alpha=''):
+@route(PREFIX + '/producesection', alpha=int)
+def ProduceSection(title, url, result_type, thumb='', alpha=None):
 
     oc = ObjectContainer(title2=title)
     (section_title, feed_url) = (title, url)
+    counter=0
     json = JSON.ObjectFromURL(url)
 
-    if result_type in json['result']:
-        item_list = json['result'][result_type]
-    else:
-        return ObjectContainer(header="Empty", message="There are no results to list right now.")
-
-    if '/feeds/ent_m150' in feed_url and alpha:
-        item_list = json['result'][result_type][alpha]
-
+    try: item_list = json['result']['data']['items']
+    except: 
+        try: item_list = json['result'][result_type]
+        except: item_list = []
     if result_type == 'promo':
         item_list = json['result'][result_type]['items']
 
+    # Create item list for individual sections of alphabet for the All listings
+    if '/ent_m150/' in feed_url and alpha:
+        item_list = json['result']['data']['items'][alpha]['sortedItems']
     for item in item_list:
-
         # Create a list of show sections
-        if result_type == 'shows':
-
-            if '/feeds/ent_m150' in feed_url and not alpha:
-                Log('entered shows if')
+        if '/ent_m150/' in feed_url or '/ent_m100/' in feed_url:
+            if '/ent_m150/' in feed_url and not alpha:
                 oc.add(DirectoryObject(
-                    key=Callback(ProduceSection, title=item, url=feed_url, result_type=result_type, alpha=item),
-                    title=item.replace('hash', '#').title()
+                    key=Callback(ProduceSection, title=item['letter'], url=feed_url, result_type=result_type, alpha=counter),
+                    title=item['letter']
                 ))
+                counter=counter+1
             else:
-                if item['title'] in EXCLUSIONS:
-                    continue
-                try: url = item['url']
-                except: url = item['canonicalURL']
+                try: url = item['canonicalURL']
+                except:
+                    try: url = item['url']
+                    except: continue
                 # Skip bad show urls that do not include '/shows/' or events. If '/events/' there is no manifest.
                 if '/shows/' not in url:
                     continue
-                try: thumb = item['images'][0]['url']
+                if item['title'] in EXCLUSIONS:
+                    continue
+                try: thumb = item['image']['url']
                 except: thumb = thumb
+                if thumb.startswith('//'):
+                    thumb = 'https:' + thumb
                 oc.add(DirectoryObject(
                     key=Callback(FeedMenu, title=item['title'], url=url, thumb=thumb),
                     title=item['title'],
                     thumb = Resource.ContentsOfURLWithFallback(url=thumb)
                 ))
-
         # Create a list of comedian sections
         elif result_type == 'promo':
 
@@ -209,15 +215,12 @@ def ProduceSection(title, url, result_type, thumb='', alpha=''):
                 title = item,
                 thumb = Resource.ContentsOfURLWithFallback(url=thumb)
             ))
-
-    oc.objects.sort(key = lambda obj: obj.title)
-
+    
     if len(oc) < 1:
         Log ('still no value for objects')
         return ObjectContainer(header="Empty", message="There are no results to list right now.")
     else:
         return oc
-
 ####################################################################################################
 # This function produces the videos listed in json under items
 @route(PREFIX + '/showvideos')
@@ -303,31 +306,23 @@ def ShowVideos(title, url, result_type):
 def SearchSections(title, query):
     
     oc = ObjectContainer(title2=title)
-    json_url = SEARCH % (String.Quote(query, usePlus=False))
-    local_url = json_url + '0&defType=edismax'
+    json_url = SEARCH %String.Quote(query, usePlus = False)
+    local_url = json_url + '0&facet=on&facet.field=bucketName_s'
     json = JSON.ObjectFromURL(local_url)
-    search_list = []
-
-    for item in json['response']['docs']:
-
-        if item['bucketName_s'] not in search_list:
-            search_list.append(item['bucketName_s'])
-
+    i = 0
+    search_list = json['facet_counts']['facet_fields']['bucketName_s']
     for item in search_list:
-
-        oc.add(DirectoryObject(
-            key = Callback(Search, title=item, url=json_url, search_type=item),
-            title = item
-        ))
+        if item in SEARCH_TYPE and search_list[i+1]!=0:
+            oc.add(DirectoryObject(key = Callback(Search, title=item, url=json_url, search_type=item), title = item))
+        i=i+1
 
     return oc
-
 ####################################################################################################
 @route(PREFIX + '/search', start=int)
 def Search(title, url, start=0, search_type=''):
 
     oc = ObjectContainer(title2=title)
-    local_url = '%s%s&fq=bucketName_s:%s&defType=edismax' % (url, start, search_type)
+    local_url = '%s%s&fq=bucketName_s:%s' %(url, start, search_type)
     json = JSON.ObjectFromURL(local_url)
 
     for item in json['response']['docs']:
@@ -400,18 +395,17 @@ def Search(title, url, start=0, search_type=''):
 @route(PREFIX + '/gettype')
 def GetType(ent):
 
-    result_type = 'relatedItems'
+    # ent_m100, ent_m150, and ent_m160 are all of type items
+    result_type = 'items'
     ENTTYPE_LIST = [
         {'ent':'ent_m071', 'type':'sortingOptions'},
         {'ent':'f1071', 'type':'sortingOptions'},
         {'ent':'ent_m013', 'type':'episodes'},
         {'ent':'f1013', 'type':'episodes'},
         {'ent':'ent_m081', 'type':'episodes'},
-        {'ent':'ent_m100', 'type':'shows'},
-        {'ent':'ent_m150', 'type':'shows'},
         {'ent':'ent_m157', 'type':'promo'},
         {'ent':'ent_m020', 'type':'playlist'},
-        {'ent':'ent_m160', 'type':'items'}
+        {'ent':'ent_m012', 'type':'relatedItems'}
     ]
 
     for item in ENTTYPE_LIST:
