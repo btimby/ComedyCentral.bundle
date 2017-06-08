@@ -46,12 +46,12 @@ def StandupSections(title):
     return oc
 
 ####################################################################################################
-# This function pulls the various json feeds for the video sections of a page 
-# including those for an individual show's video and full episodes sections
+# This function pulls the json feeds in the ENT_LIST for any page
 @route(PREFIX + '/feedmenu')
 def FeedMenu(title, url, thumb=''):
 
     oc = ObjectContainer(title2=title)
+    feed_title = title
 
     try:
         content = HTTP.Request(url, cacheTime=CACHE_1DAY).content
@@ -84,21 +84,20 @@ def FeedMenu(title, url, thumb=''):
         result_type = GetType(ent_code)
         json = JSON.ObjectFromURL(json_feed, cacheTime = CACHE_1DAY)
 
-        # Get the title from the promo or playlist area
-        try:
-            title = json['result']['playlist']['title']
+        # Get the title
+        # Title for most are under promo/headline
+        # full episode main page(ent_m081), individual show video clips(ent_m071, f1071), comedians(ent_m157) and standup specials(ent_m012)
+        try: title = json['result']['promo']['headline']
         except:
-            if 'promo' in json['result']:
-                try:
-                    title = json['result']['promo']['headline']
+            # Title for shows(ent_m100 and ent_m150) under data/headerText
+            try: title = json['result']['data']['headerText']
+            except:
+                # Title for individual show full episodes(ent_m013 and f1013) are under promo/headerText
+                try: title = json['result']['promo']['headerText']
                 except:
-                    title = json['result']['promo']['headerText']
-            else:
-                try: 
-                    title = json['result']['data']['headerText']
-                except: 
-                    Log('no title found')
-                    continue
+                    # Title for playlist (ent_m020) is under plalylist/title
+                    try: title = json['result']['playlist']['title']
+                    except: title = feed_title
 
         # Create menu items for those that need to go to Produce Sections
         # ent_m071 and f1071-each show's video clips, ent_m157-comedian lists, and ent_m100 and entm150 - show sections
@@ -112,11 +111,11 @@ def FeedMenu(title, url, thumb=''):
                     thumb = Resource.ContentsOfURLWithFallback(url=thumb)
                ))
 
-        # Create menu for the others to produce videos
-        # ent_m013 and f1013 - each show's full episodes, ent_m020-playlists, ent_m160-Standup video clips, and ent_m012-standup specials listing
+        # Create menu for all others to produce videos
+        # ent_m013 and f1013 - each show's full episodes, ent_m020-playlists, ent_m160-Standup video clips, and ent_m012-standup specials/related items listing
         elif ent_code in ['ent_m081','ent_m013', 'f1013', 'ent_m020', 'ent_m160', 'ent_m012']:
 
-            # Checck related items for videos before creating a directory
+            # Checck ent_m012/related items for videos before creating a directory
             if ent_code == 'ent_m012':
 
                 example_url = json['result']['relatedItems'][0]['canonicalURL']
@@ -130,7 +129,7 @@ def FeedMenu(title, url, thumb=''):
                 thumb = Resource.ContentsOfURLWithFallback(url=thumb)
             ))
 
-        # Also create additional menu items for full episode feeds for each show from Full Episodes URL
+        # Also create additional menu items for full episode feeds for each show
         if ent_code == 'ent_m081':
 
             for item in json['result']['shows']:
@@ -150,34 +149,39 @@ def FeedMenu(title, url, thumb=''):
         return oc
 
 ####################################################################################################
-# For Producing the sections from various json feeds
+# This function produces sections from a json feeds
+# including shows(ent_m100), AtoZ shows(ent_m150), comedians (ent_m157), and video filters(ent_m116)
 @route(PREFIX + '/producesection', alpha=int)
-def ProduceSection(title, url, result_type, thumb='', alpha=None):
+def ProduceSection(title, url, result_type='data', thumb='', alpha=None):
 
     oc = ObjectContainer(title2=title)
     (section_title, feed_url) = (title, url)
     counter=0
     json = JSON.ObjectFromURL(url)
 
-    try: item_list = json['result']['data']['items']
+    # Create item lists
+    try: 
+        # Create list for show feeds (data/items) and comedians (promo/items)
+        item_list = json['result'][result_type]['items']
     except: 
+        # Create list for video feed filters
         try: item_list = json['result'][result_type]
         except: item_list = []
-    if result_type == 'promo':
-        item_list = json['result'][result_type]['items']
 
-    # Create item list for individual sections of alphabet for the All listings
+    # Create list for alphabet sections for the AtoZ show feeds
     if '/ent_m150/' in feed_url and alpha:
-        item_list = json['result']['data']['items'][alpha]['sortedItems']
+        item_list = json['result'][result_type]['items'][alpha]['sortedItems']
     for item in item_list:
-        # Create a list of show sections
+        # Produce menu items for show lists
         if '/ent_m150/' in feed_url or '/ent_m100/' in feed_url:
+            # Produce alphabetic menu items for AtoZ
             if '/ent_m150/' in feed_url and not alpha:
                 oc.add(DirectoryObject(
                     key=Callback(ProduceSection, title=item['letter'], url=feed_url, result_type=result_type, alpha=counter),
                     title=item['letter']
                 ))
                 counter=counter+1
+            # Produce menu items for each show (under Featured, a letter, etc)
             else:
                 try: url = item['canonicalURL']
                 except:
@@ -197,7 +201,7 @@ def ProduceSection(title, url, result_type, thumb='', alpha=None):
                     title=item['title'],
                     thumb = Resource.ContentsOfURLWithFallback(url=thumb)
                 ))
-        # Create a list of comedian sections
+        # Produce menu items for comedians
         elif result_type == 'promo':
 
             oc.add(DirectoryObject(
@@ -206,7 +210,7 @@ def ProduceSection(title, url, result_type, thumb='', alpha=None):
                 thumb = Resource.ContentsOfURLWithFallback(url=item['image']['url'])
             ))
 
-        # Create a list video sections
+        # Produce menu items for video filters for the video clips for an individual a show
         else:
             url = json['result'][result_type][item]
 
@@ -222,7 +226,7 @@ def ProduceSection(title, url, result_type, thumb='', alpha=None):
     else:
         return oc
 ####################################################################################################
-# This function produces the videos listed in json under items
+# This function produces the videos listed in a json feed under items
 @route(PREFIX + '/showvideos')
 def ShowVideos(title, url, result_type):
 
@@ -302,6 +306,7 @@ def ShowVideos(title, url, result_type):
         return oc
 
 ####################################################################################################
+# This function produces the types of results (show, video, etc) returned from a search
 @route(PREFIX + '/searchsections')
 def SearchSections(title, query):
     
@@ -318,6 +323,7 @@ def SearchSections(title, query):
 
     return oc
 ####################################################################################################
+# This function produces the results for a search under each search type
 @route(PREFIX + '/search', start=int)
 def Search(title, url, start=0, search_type=''):
 
@@ -396,7 +402,7 @@ def Search(title, url, start=0, search_type=''):
 def GetType(ent):
 
     # ent_m100, ent_m150, and ent_m160 are all of type items
-    result_type = 'items'
+    result_type = 'data'
     ENTTYPE_LIST = [
         {'ent':'ent_m071', 'type':'sortingOptions'},
         {'ent':'f1071', 'type':'sortingOptions'},
@@ -405,6 +411,7 @@ def GetType(ent):
         {'ent':'ent_m081', 'type':'episodes'},
         {'ent':'ent_m157', 'type':'promo'},
         {'ent':'ent_m020', 'type':'playlist'},
+        {'ent':'ent_m160', 'type':'items'},
         {'ent':'ent_m012', 'type':'relatedItems'}
     ]
 
